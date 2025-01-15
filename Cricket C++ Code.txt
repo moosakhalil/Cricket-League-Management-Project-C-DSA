@@ -1,0 +1,2279 @@
+#include <algorithm>
+#include <chrono>
+#include <conio.h>
+#include <cstdlib>
+#include <ctime>
+#include <fstream>
+#include <iomanip>
+#include <iostream>
+#include <limits>
+#include <set>
+#include <sstream>
+#include <stack>
+#include <string>
+#include <thread>
+#include <vector>
+
+
+using namespace std;
+
+struct PlayerNode {
+    string playerName;
+    int age = 0;
+    string position;
+    double playerPrice = 0.0;
+    string playerType;
+    PlayerNode* next = nullptr;
+};
+
+PlayerNode* head = nullptr;
+
+struct Node {
+    string data;
+    Node* next;
+};
+
+struct TreeNode {
+    string data;
+    TreeNode* left;
+    TreeNode* right;
+};
+
+bool isAuthenticated = false;
+
+void displayUserAuthenticationMenu();
+void signup();
+void userAuthentication();
+bool doesUsernameExist(const string& username);
+
+void displayMainMenu();
+void displayTeamManagementMenu();
+void displayPlayerManagementMenu();
+void displaySponsorManagementMenu();
+void displayMatchManagementMenu();
+
+void deleteTeam();
+void displayRegisteredTeams();
+void registerNewTeam();
+void renameTeam();
+void teamManagement();
+void viewPlayers();
+
+void releasePlayer();
+void purchasePlayer();
+void displayPlayerStatistics();
+void displayPlayerCategories();
+void performPlayerExchange();
+void playerManagement();
+int countPlayersInTeam(const string& teamName);
+
+void sponsorManagement();
+void displaySponsorCategories();
+void selectSponsor();
+bool isTeamRegistered(const string& teamName);
+
+void matchManagement();
+string generateRandomDate();
+string generateRandomVenue();
+void viewMatchSchedule();
+void viewPointsTable();
+void clearInputBuffer();
+void viewPointTable();
+void saveUserName(const string& userName);
+
+void clearInputBuffer() {
+    cin.clear();
+    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+}
+
+void matchManagement() {
+    int choice;
+    while (true) {
+
+        displayMatchManagementMenu();
+
+        while (!(cin >> choice) || (choice < 1 || choice > 4)) {
+            cout << "--->>ENTER VALID INPUT: ";
+            clearInputBuffer();
+        }
+
+        switch (choice) {
+        case 1:
+
+            viewMatchSchedule();
+            break;
+        case 2:
+            viewPointsTable();
+            break;
+        case 3:
+            viewPointTable();
+            break;
+        case 4:
+            system("cls");
+            return;
+        }
+    }
+}
+
+string generateRandomDate() {
+
+    int day = rand() % 28 + 1;
+    int month = 6;
+    int year = 2024;
+
+    return to_string(day) + "/" + to_string(month) + "/" + to_string(year);
+}
+
+string generateRandomVenue() {
+    static vector<string> venues = { "Karachi", "Rawalpindi", "Lahore", "Multan" };
+    static vector<string> shuffledVenues = venues;
+    static bool initialized = false;
+    if (!initialized) {
+        srand(static_cast<unsigned int>(time(nullptr)));
+        random_shuffle(shuffledVenues.begin(), shuffledVenues.end());
+        initialized = true;
+    }
+    static size_t index = 0;
+    string venue = shuffledVenues[index++];
+    if (index >= shuffledVenues.size()) {
+        index = 0;
+        random_shuffle(shuffledVenues.begin(), shuffledVenues.end());
+    }
+    return venue;
+}
+
+void viewMatchSchedule() {
+
+    displayRegisteredTeams();
+
+    cout << "...................................GENERATING MATCH "
+        "SCHEDULE...................................."
+        << endl;
+
+    ifstream teamsFile("teams.txt");
+    string teamName;
+    vector<string> registeredTeams;
+
+    while (getline(teamsFile, teamName)) {
+        registeredTeams.push_back(teamName);
+    }
+    teamsFile.close();
+
+    vector<string> usedDates;
+
+    cout << "Match Schedule:" << endl;
+    for (size_t i = 0; i < registeredTeams.size(); i++) {
+        for (size_t j = i + 1; j < registeredTeams.size(); j++) {
+            string date = generateRandomDate();
+            usedDates.push_back(date);
+            string venue = generateRandomVenue();
+
+            cout << registeredTeams[i] << " vs " << registeredTeams[j]
+                << " - Date: " << date << ", Venue: " << venue << endl;
+        }
+    }
+    cout << "PRESS ENTER TO CONTINUE" << endl;
+    cin.ignore();
+    cin.get();
+}
+struct Team {
+    string name;
+    int matchesPlayed;
+    int matchesWon;
+    int matchesLost;
+    int points;
+
+    Team(const string& teamName)
+        : name(teamName), matchesPlayed(0), matchesWon(0), matchesLost(0),
+        points(0) {}
+};
+
+void saveUserName(const string& userName) {
+    ofstream userFile("users.txt", ios::app);
+    if (userFile.is_open()) {
+        userFile << userName << endl;
+        userFile.close();
+    }
+    else {
+        cout << "Error: Unable to open user file for writing." << endl;
+    }
+}
+void viewPointsTable() {
+    system("cls");
+    cout << "Generating points table..." << endl;
+
+    string userName;
+    cout << "Enter The File Name In Which You Want To Save Later: ";
+    cin >> userName;
+    viewMatchSchedule();
+
+    saveUserName(userName);
+
+    ifstream teamsFile("teams.txt");
+    string teamName;
+    vector<Team> teams;
+
+    while (getline(teamsFile, teamName)) {
+        teams.emplace_back(teamName);
+    }
+    teamsFile.close();
+
+    cout << "Match Schedule:" << endl;
+    for (auto& team : teams) {
+        for (int i = 0; i < 3; ++i) {
+            string date = generateRandomDate();
+            string venue = generateRandomVenue();
+
+            cout << team.name << " - Match " << i + 1 << " - Date: " << date
+                << ", Venue: " << venue << endl;
+
+            int winner;
+            bool validWinner = false;
+            do {
+                cout << "Enter winner of match " << i + 1 << " for " << team.name
+                    << " (1 for win, 2 for loss): ";
+                cin >> winner;
+
+                if (cin.fail() || (winner != 1 && winner != 2)) {
+                    cout << "Invalid input. Please enter 1 for win or 2 for loss."
+                        << endl;
+                    cin.clear();
+                    cin.ignore(numeric_limits<streamsize>::max(), '\n');
+                }
+                else {
+                    validWinner = true;
+
+                    if (winner == 1) {
+                        team.matchesWon++;
+                        team.points += 2;
+                    }
+                    else {
+                        team.matchesLost++;
+                    }
+                }
+            } while (!validWinner);
+            team.matchesPlayed++;
+        }
+    }
+
+    sort(teams.begin(), teams.end(),
+        [](const Team& a, const Team& b) { return a.points > b.points; });
+
+    cout << "--------------------------------------------------------------------"
+        "--------------------"
+        << endl;
+    cout << "|   Team Name       |  Matches Played |  Matches Won |  Matches "
+        "Lost |  Points |"
+        << endl;
+    cout << "--------------------------------------------------------------------"
+        "--------------------"
+        << endl;
+    for (const auto& team : teams) {
+        cout << "|   " << setw(15) << left << team.name << " |" << setw(15) << right
+            << team.matchesPlayed << " |" << setw(13) << right << team.matchesWon
+            << " |" << setw(14) << right << team.matchesLost << " |" << setw(7)
+            << right << team.points << " |" << endl;
+    }
+    cout << "--------------------------------------------------------------------"
+        "--------------------"
+        << endl;
+
+    char choice;
+    cout << "Do you want to save this timetable? (y/n): ";
+    cin >> choice;
+
+    if (choice == 'y' || choice == 'Y') {
+        string filename = userName + "_pointtable.txt";
+        ofstream outFile(filename);
+        if (outFile.is_open()) {
+            outFile << "-------------------------------------------------------------"
+                "------------------"
+                << endl;
+            outFile << "|   Team Name       |  Matches Played |  Matches Won |  "
+                "Matches Lost |  Points |"
+                << endl;
+            outFile << "-------------------------------------------------------------"
+                "------------------"
+                << endl;
+            for (const auto& team : teams) {
+                outFile << "|   " << setw(15) << left << team.name << " |" << setw(15)
+                    << right << team.matchesPlayed << " |" << setw(13) << right
+                    << team.matchesWon << " |" << setw(14) << right
+                    << team.matchesLost << " |" << setw(7) << right << team.points
+                    << " |" << endl;
+            }
+            outFile << "-------------------------------------------------------------"
+                "--------------------"
+                << endl;
+            cout << "Point table has been successfully saved to " << filename << endl;
+            outFile.close();
+        }
+        else {
+            cout << "Error: Unable to open file " << filename << " for writing."
+                << endl;
+        }
+    }
+
+    cout << "PRESS ENTER TO CONTINUE" << endl;
+    cin.ignore();
+    cin.get();
+}
+
+void viewPointTable() {
+    system("cls");
+    cout << "View generated point tables..." << endl;
+
+    vector<string> users;
+    ifstream userFile("users.txt");
+    string userName;
+    while (getline(userFile, userName)) {
+        users.push_back(userName);
+    }
+    userFile.close();
+
+    cout << "Available users:" << endl;
+    for (const auto& user : users) {
+        cout << "- " << user << endl;
+    }
+
+    string targetUser;
+    cout << "Enter the name of the user whose point table you want to view: ";
+    cin >> targetUser;
+
+    auto it = find(users.begin(), users.end(), targetUser);
+    if (it != users.end()) {
+
+        string filename = targetUser + "_pointtable.txt";
+        ifstream inFile(filename);
+        if (inFile.is_open()) {
+            string line;
+            while (getline(inFile, line)) {
+                cout << line << endl;
+            }
+            inFile.close();
+        }
+        else {
+            cout << "Error: Unable to open file " << filename << " for reading."
+                << endl;
+        }
+    }
+    else {
+        cout << "User " << targetUser << " does not exist." << endl;
+    }
+
+    cout << "PRESS ENTER TO CONTINUE" << endl;
+    cin.ignore();
+    cin.get();
+}
+
+void displayMatchManagementMenu() {
+
+    cout << "\n";
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |           MATCH MANAGEMENT MENU:                    |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 1. VIEW MATCH SCHEDULE              |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 2. GENERATE POINTS TABLE            |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 3. VIEW GENERATED TABLES            |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 4. BACK TO MAIN MENU                |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "Enter your choice: ";
+}
+
+void displayPlayerStatistics() {
+
+    displayPlayerCategories();
+    cout << "Enter category Number: ";
+    int categoryChoice;
+    while (!(cin >> categoryChoice) ||
+        (categoryChoice < 1 || categoryChoice > 4)) {
+        cout << "--->>ENTER VALID INPUT: ";
+    }
+
+    string categoryFileName;
+    switch (categoryChoice) {
+    case 1:
+        categoryFileName = "Gold_players.txt";
+        break;
+    case 2:
+        categoryFileName = "Platinum_players.txt";
+        break;
+    case 3:
+        categoryFileName = "Diamond_players.txt";
+        break;
+    case 4:
+        categoryFileName = "Emerging_players.txt";
+        break;
+    }
+
+    ifstream categoryFile(categoryFileName);
+    if (!categoryFile.is_open()) {
+        cout << "Error: Unable to open category file '" << categoryFileName
+            << "' for reading." << endl;
+        return;
+    }
+
+    string playerName;
+    while (getline(categoryFile, playerName)) {
+
+        cout << "Statistics For Player: " << playerName << endl;
+
+        cout << "Matches Played: " << rand() % 50 << endl;
+        cout << "Runs Scored: " << rand() % 1000 << endl;
+        cout << "Wickets Taken: " << rand() % 50 << endl;
+        cout << "Strike Rate: " << (rand() % 1000) / 10.0 << endl;
+        cout << "------------------------" << endl;
+    }
+    categoryFile.close();
+}
+
+void addPlayerLinkedList(PlayerNode*& head) {
+    string playerName, position;
+    int age, type;
+    double price;
+
+    system("cls");
+    cout << "Enter player Name: ";
+    cin.ignore();
+    getline(cin, playerName);
+
+    cout << "Enter Player Age: ";
+    while (!(cin >> age) || age < 0 || age > 150) {
+        cout << "Invalid age. Please enter a valid age: ";
+        clearInputBuffer();
+    }
+
+    cout << "Enter player Category (*Gold* / *Platinum* / *Diamond* / "
+        "*Emerging*): ";
+    cin >> position;
+
+    cout << "Enter player price (in USD): ";
+    while (!(cin >> price) || price < 0) {
+        cout << "--->>ENTER VALID INPUT: ";
+        clearInputBuffer();
+    }
+
+    cout << "Enter type of player (1 for Batsman, 2 for Bowler, 3 for "
+        "AllRounder): ";
+    while (!(cin >> type) || (type < 1 || type > 3)) {
+        cout << "--->>ENTER VALID INPUT: ";
+        clearInputBuffer();
+    }
+
+    string typeString;
+    switch (type) {
+    case 1:
+        typeString = "Batsman";
+        break;
+    case 2:
+        typeString = "Bowler";
+        break;
+    case 3:
+        typeString = "Allrounder";
+        break;
+    }
+
+    PlayerNode* newNode = new PlayerNode;
+    newNode->playerName = playerName;
+    newNode->age = age;
+    newNode->position = position;
+    newNode->playerPrice = price;
+    newNode->playerType = typeString;
+    newNode->next = nullptr;
+
+    string categoryFileName;
+    if (position == "Gold")
+        categoryFileName = "Gold_players.txt";
+    else if (position == "Platinum")
+        categoryFileName = "Platinum_players.txt";
+    else if (position == "Diamond")
+        categoryFileName = "Diamond_players.txt";
+    else if (position == "Emerging")
+        categoryFileName = "Emerging_players.txt";
+    else {
+        cout << "Invalid Category." << endl;
+        delete newNode;
+        return;
+    }
+
+    ofstream categoryFile(categoryFileName, ios::app);
+    if (!categoryFile.is_open()) {
+        cout << "Error: Unable to open category file '" << categoryFileName
+            << "' for appending." << endl;
+        delete newNode;
+        return;
+    }
+
+    categoryFile << playerName << " $" << price << " " << typeString << endl;
+    categoryFile.close();
+
+    if (head == nullptr) {
+        head = newNode;
+    }
+    else {
+
+        PlayerNode* current = head;
+        while (current->next != nullptr) {
+            current = current->next;
+        }
+
+        current->next = newNode;
+    }
+
+    cout << "Player '" << playerName << "' Added Successfully To The " << position
+        << " Category!" << endl;
+    cout << "PRESS ENTER TO CONTINUE" << endl;
+    cin.get();
+    cin.ignore();
+    system("cls");
+}
+
+void displayTeamManagementMenu() {
+    cout << "\n";
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |             TEAM MANAGEMENT MENU                    |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 1. REGISTERED TEAMS                 |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 2. REGISTER NEW TEAM                |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 3. RENAME TEAM                      |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 4. DELETE TEAM                      |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 5. VIEW PLAYERS IN TEAM             |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 6. BACK                             |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 7. LOG OUT                          |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+}
+
+void displayPlayerManagementMenu() {
+
+    cout << "\n";
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |             PLAYER MANAGEMENT MENU                  |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 1. PURCHASE PLAYERS                 |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 2. RELEASE PLAYERS                  |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 3. EXCHANGE PLAYERS                 |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 4. PLAYERS STATISTICS               |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 5. BACK                             |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 6. LOG OUT                          |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+}
+
+void displayMainMenu() {
+
+    system("cls");
+    cout << "\n";
+    cout << "  "
+        "+-------------------------------------------------------------------"
+        "------+"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  |                           WELCOME TO CRICKET LEAGUE             "
+        "        |"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  "
+        "+-------------------------------------------------------------------"
+        "------+"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  |                 1. USER AUTHENTICATION                          "
+        "        |"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  |                 2. TEAM MANAGEMENT                              "
+        "        |"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  |                 3. PLAYER MANAGEMENT                            "
+        "        |"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  |                 4. SPONSOR MANAGEMENT                           "
+        "        |"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  |                 5. MATCH MANAGEMENT                             "
+        "        |"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  |                 6. EXIT                                         "
+        "        |"
+        << endl;
+    cout << "  |                                                                 "
+        "        |"
+        << endl;
+    cout << "  "
+        "+-------------------------------------------------------------------"
+        "------+"
+        << endl;
+}
+
+void displayRegisteredTeams() {
+    system("cls");
+    cout << "...............Registered Teams.................:" << endl;
+    ifstream inFile("teams.txt");
+    if (!inFile.is_open()) {
+        cerr << "Error: Unable to open teams file for reading." << endl;
+        return;
+    }
+
+    int teamNumber = 1;
+    string teamName;
+    while (getline(inFile, teamName)) {
+        cout << teamNumber << ". " << teamName << endl;
+        teamNumber++;
+        if (teamNumber > 10)
+            break;
+    }
+    inFile.close();
+}
+
+struct TeamNode {
+    string name;
+    TeamNode* next;
+};
+
+void registerNewTeam() {
+    system("cls");
+    cout << "Enter The Name Of The New Team: ";
+    string teamName;
+    cin >> teamName;
+
+    TeamNode* newNode = new TeamNode;
+    newNode->name = teamName;
+    newNode->next = nullptr;
+
+    ifstream inFile("teams.txt");
+    ofstream outFile("teams.txt", ios::app);
+    if (!outFile.is_open()) {
+        cerr << "Error: Unable to open teams file for writing." << endl;
+        delete newNode;
+        return;
+    }
+
+    if (inFile.peek() == ifstream::traits_type::eof()) {
+        outFile << teamName << endl;
+    }
+    else {
+
+        string lastTeam;
+        while (getline(inFile, lastTeam)) {
+        }
+        outFile << teamName << endl;
+    }
+
+    inFile.close();
+    outFile.close();
+
+    cout << "New Team \"" << teamName << "\" Registered Successfully!" << endl;
+    delete newNode;
+}
+
+void deleteTeam() {
+    system("cls");
+    displayRegisteredTeams();
+    cout << "Enter The Name Of The Team You Want To Delete: ";
+    string teamToDelete;
+    cin >> teamToDelete;
+
+    if (!isTeamRegistered(teamToDelete)) {
+        cout << "Team '" << teamToDelete << "' does not exist." << endl;
+        return;
+    }
+
+    TeamNode* head = nullptr;
+    TeamNode* prev = nullptr;
+    TeamNode* current = nullptr;
+
+    ifstream inFile("teams.txt");
+    if (!inFile.is_open()) {
+        cout << "Error opening file for reading." << endl;
+        return;
+    }
+
+    string teamName;
+    while (getline(inFile, teamName)) {
+        TeamNode* newNode = new TeamNode;
+        newNode->name = teamName;
+        newNode->next = nullptr;
+
+        if (head == nullptr) {
+            head = newNode;
+        }
+        else {
+            prev->next = newNode;
+        }
+
+        prev = newNode;
+
+        if (teamName == teamToDelete) {
+            if (current == nullptr) {
+                current = head;
+            }
+            else {
+                current->next = newNode;
+            }
+        }
+    }
+    inFile.close();
+
+    ofstream outFile("teams.txt");
+    if (!outFile.is_open()) {
+        cout << "Error opening file for writing." << endl;
+        return;
+    }
+
+    current = head;
+    while (current != nullptr) {
+        if (current->name != teamToDelete) {
+            outFile << current->name << endl;
+        }
+        TeamNode* temp = current;
+        current = current->next;
+        delete temp;
+    }
+    outFile.close();
+
+    cout << "Team '" << teamToDelete << "' Deleted Successfully." << endl;
+    cout << "\nPRESS ENTER TO CONTINUE";
+    cin.ignore();
+    cin.get();
+    system("cls");
+}
+
+struct TeamTreeNode {
+    string teamName;
+    TeamTreeNode* left;
+    TeamTreeNode* right;
+};
+
+TeamTreeNode* root = nullptr;
+
+void viewPlayers() {
+    system("cls");
+    displayRegisteredTeams();
+
+    cout << "Enter The Number Of The Team To View Players: ";
+    int teamNumber;
+    cin >> teamNumber;
+
+    if (teamNumber < 1) {
+        cout << "Invalid Team Number." << endl;
+        return;
+    }
+
+    ifstream teamsFile("teams.txt");
+    if (!teamsFile.is_open()) {
+        cout << "Error: Could not open file 'teams.txt' for reading." << endl;
+        return;
+    }
+
+    vector<string> teamNames;
+    string teamName;
+    while (getline(teamsFile, teamName)) {
+        teamNames.push_back(teamName);
+    }
+    teamsFile.close();
+
+    if (teamNumber > teamNames.size()) {
+        cout << "Invalid team number." << endl;
+        return;
+    }
+
+    string selectedTeamName = teamNames[teamNumber - 1];
+    string teamFilename = selectedTeamName + ".txt";
+
+    cout << "Attempting To Open File: " << teamFilename << endl;
+
+    ifstream teamFile(teamFilename);
+    if (!teamFile.is_open()) {
+        cout << "Error: Could not open file " << teamFilename << " for reading."
+            << endl;
+        return;
+    }
+
+    system("cls");
+    cout << "Players Of Team " << selectedTeamName << ":" << endl;
+    string playerName;
+    while (getline(teamFile, playerName)) {
+        cout << playerName << endl;
+    }
+    teamFile.close();
+    cout << "\nPRESS ENTER TO CONTINUE";
+    cin.ignore();
+    cin.get();
+    system("cls");
+}
+
+void displayUserAuthenticationMenu() {
+    system("cls");
+    cout << "\n";
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 USER AUTHENTICATION MENU            |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 1. LOGIN                            |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 2. SIGN UP                          |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+}
+
+void renameTeam() {
+    system("cls");
+    displayRegisteredTeams();
+    cout << "Enter The Name Of The Team You Want To Rename: ";
+    string oldName;
+    cin >> oldName;
+
+    ifstream inFile("teams.txt");
+    if (!inFile.is_open()) {
+        cout << "Error opening file for reading." << endl;
+        return;
+    }
+
+    vector<string> teams;
+    string teamName;
+    while (getline(inFile, teamName)) {
+        teams.push_back(teamName);
+    }
+    inFile.close();
+
+    auto it = find(teams.begin(), teams.end(), oldName);
+    if (it == teams.end()) {
+        cout << "Team '" << oldName << "' does not exist." << endl;
+        return;
+    }
+
+    cout << "Enter The New Name For The Team: ";
+    string newName;
+    cin >> newName;
+
+    // Rename the team file in the folder
+    string oldFilename = oldName + ".txt";
+    string newFilename = newName + ".txt";
+    if (rename(oldFilename.c_str(), newFilename.c_str()) != 0) {
+        cout << "Error renaming file." << endl;
+        return;
+    }
+
+    *it = newName;
+
+    ofstream outFile("teams.txt");
+    if (!outFile.is_open()) {
+        cout << "Error opening file for writing." << endl;
+        return;
+    }
+
+    for (const string& name : teams) {
+        outFile << name << endl;
+    }
+    outFile.close();
+
+    cout << "Team '" << oldName << "' Renamed To '" << newName
+        << "' Successfully." << endl;
+
+    cout << "\nPRESS ENTER TO CONTINUE";
+    cin.ignore();
+    cin.get();
+    system("cls");
+}
+
+
+bool doesUsernameExist(const string& username) {
+    ifstream inFile("authentication.txt");
+    if (!inFile.is_open()) {
+        cout << "Error opening file for reading." << endl;
+        return false;
+    }
+    string line;
+    while (getline(inFile, line)) {
+        if (line.find("Username: " + username) != string::npos) {
+            inFile.close();
+            return true;
+        }
+    }
+    inFile.close();
+    return false;
+}
+
+void signup() {
+    system("cls");
+    string username, password, confirmPassword;
+
+    cout << "Enter Username : ";
+    cin >> username;
+
+    if (username.length() <= 3) {
+
+        cout << "Username should be more than three characters. Please try again."
+            << endl;
+        signup();
+        return;
+    }
+
+    if (doesUsernameExist(username)) {
+        cout << "Username already exists. Please choose a different username."
+            << endl;
+
+        return;
+    }
+
+    while (true) {
+
+        cout << "Enter Password: ";
+        password = "";
+        char ch;
+        while ((ch = _getch()) != '\r') {
+            if (ch == '\b') {
+                if (!password.empty()) {
+                    cout << "\b \b";
+                    password.pop_back();
+                }
+            }
+            else {
+                cout << '*';
+                password.push_back(ch);
+            }
+        }
+        cout << endl;
+
+        if (password.length() < 6) {
+
+            cout << "Password Should Be At Least 6 Characters Long. Please Try Again."
+                << endl;
+        }
+        else {
+            break;
+        }
+    }
+
+    cout << "Confirm Password: ";
+    confirmPassword = "";
+    char ch;
+    while ((ch = _getch()) != '\r') {
+        if (ch == '\b') {
+            if (!confirmPassword.empty()) {
+                cout << "\b \b";
+                confirmPassword.pop_back();
+            }
+        }
+        else {
+            cout << '*';
+            confirmPassword.push_back(ch);
+        }
+    }
+    cout << endl;
+
+    if (password != confirmPassword) {
+
+        cout << "Passwords Do Not Match. Please Try Again." << endl;
+
+        return;
+    }
+
+    ofstream outFile("authentication.txt", ios::app);
+    if (!outFile.is_open()) {
+        cout << "Error opening file for writing." << endl;
+        return;
+    }
+    outFile << "Username: " << username << "\nPassword: " << password << "\n\n";
+    outFile.close();
+    cout << "\nAccount Created Successfully!" << endl;
+}
+
+void logout() {
+    isAuthenticated = false;
+    system("cls");
+    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        "~~~~~~"
+        << endl;
+    cout << "---------------<<<<<<<<<<LOGGED OUT "
+        "SUCCESSFULLY!>>>>>>>>>>---------------"
+        << endl;
+    cout << "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+        "~~~~~~"
+        << endl;
+    cout << "PRESS ENTER TO CONTINUE" << endl;
+    cin.get();
+    cin.ignore();
+    system("cls");
+}
+
+void userAuthentication() {
+    string username, password;
+
+    while (true) {
+
+        displayUserAuthenticationMenu();
+        cout << "Enter Your Choice: ";
+        int choice;
+        while (!(cin >> choice) || (choice != 1 && choice != 2)) {
+            cout << "--->>ENTER VALID INPUT";
+            clearInputBuffer();
+        }
+
+        if (choice == 1) {
+            system("cls");
+
+            cout << "Enter Username: ";
+            cin >> username;
+            system("cls");
+
+            cout << "Enter Password: ";
+
+            char ch;
+            password = "";
+            while (true) {
+                ch = _getch();
+                if (ch == 13)
+                    break;
+                else if (ch == '\b') {
+                    if (!password.empty()) {
+                        cout << "\b \b";
+
+                        password.pop_back();
+                    }
+                }
+                else {
+                    password.push_back(ch);
+                    cout << '*';
+                }
+            }
+            cout << endl;
+
+            ifstream inFile("authentication.txt");
+            if (!inFile.is_open()) {
+                cout << "Error opening file for reading." << endl;
+                return;
+            }
+
+            string line;
+            while (getline(inFile, line)) {
+                if (line.find("Username: " + username) != string::npos) {
+                    string actualPassword;
+                    getline(inFile, line);
+                    actualPassword = line.substr(line.find("Password: ") + 10);
+                    if (actualPassword == password) {
+                        system("cls");
+                        cout << "Login Successful!" << endl;
+                        inFile.close();
+                        cout << "PRESS ENTER TO CONTINUE.";
+                        cin.ignore();
+                        cin.get();
+                        system("cls");
+                        return;
+                    }
+                }
+            }
+            inFile.close();
+            cout << "Username Not Found Or Incorrect Password." << endl;
+            cout << "Press Enter To Continue...";
+            cin.ignore();
+            cin.get();
+        }
+        else {
+            signup();
+            cout << "Press Enter To Return To The Main Menu...";
+            cin.ignore();
+            cin.get();
+        }
+    }
+}
+
+void displayPlayerCategories() {
+    system("cls");
+    cout << "\n";
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |            PLAYER CATEGORIES MENU                   |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 Choose category:                    |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 1. GOLD                             |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 2. PLATINUM                         |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 3. DIAMOND                          |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 4. EMERGING                         |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+}
+
+void teamManagement() {
+    system("cls");
+
+    int choice;
+    while (true) {
+        displayTeamManagementMenu();
+        cout << "Enter Your Choice: ";
+        while (!(cin >> choice) || (choice < 1 || choice > 7)) {
+            cout << "--->>ENTER VALID INPUT";
+            clearInputBuffer();
+        }
+
+        switch (choice) {
+        case 1:
+            displayRegisteredTeams();
+            break;
+        case 2:
+            registerNewTeam();
+            break;
+        case 3:
+            renameTeam();
+            break;
+        case 4:
+            deleteTeam();
+            break;
+        case 5:
+            viewPlayers();
+            break;
+        case 6:
+            system("cls");
+            return;
+        case 7:
+            logout();
+            return;
+        }
+    }
+}
+
+int countPlayersInTeam(const string& teamName) {
+    ifstream teamFile(teamName + ".txt");
+    int count = 0;
+    string playerName;
+    while (getline(teamFile, playerName)) {
+        count++;
+    }
+    teamFile.close();
+    return count;
+}
+
+void purchasePlayer() {
+    displayRegisteredTeams();
+
+    cout << "Enter The Name Of The Team To Which You Want To Add The Player: ";
+    string teamName;
+    cin >> teamName;
+
+    if (!isTeamRegistered(teamName)) {
+        cout << "No team named '" << teamName << "' found." << endl;
+        cout << "PRESS ENTER TO CONTINUE";
+        cin.ignore();
+        cin.get();
+        system("cls");
+        return;
+    }
+
+    int playerCount = countPlayersInTeam(teamName);
+    if (playerCount >= 16) {
+        cout << "You Have Reached The Maximum Limit Of Players For The Team."
+            << endl;
+        return;
+    }
+
+    displayPlayerCategories();
+
+    cout << "Enter Category Number: ";
+    int categoryChoice;
+
+    while (!(cin >> categoryChoice) ||
+        (categoryChoice < 1 || categoryChoice > 4)) {
+        cout << "--->>ENTER VALID INPUT: ";
+        clearInputBuffer();
+    }
+    system("cls");
+    string category;
+    switch (categoryChoice) {
+    case 1:
+        category = "Gold";
+        break;
+    case 2:
+        category = "Platinum";
+        break;
+    case 3:
+        category = "Diamond";
+        break;
+    case 4:
+        category = "Emerging";
+        break;
+    }
+
+    string filename = category + "_players.txt";
+    ifstream file(filename);
+    if (!file.is_open()) {
+        cout << "Error: Could not open file " << filename << " for category "
+            << category << endl;
+        return;
+    }
+
+    cout << "Available Players in " << category << " Category:" << endl;
+    string playerName;
+    vector<string> players;
+    int serialNumber = 1;
+    while (getline(file, playerName)) {
+        cout << serialNumber << ". " << playerName << endl;
+        players.push_back(playerName);
+        serialNumber++;
+    }
+    file.close();
+
+    cout << "Enter The Serial Number Of The Player You Want To Purchase: ";
+    int playerSerial;
+    while (!(cin >> playerSerial) || playerSerial < 1 ||
+        playerSerial > players.size()) {
+        cout << "--->>ENTER VALID INPUT: ";
+        clearInputBuffer();
+    }
+    playerName = players[playerSerial - 1];
+
+    ofstream teamFile(teamName + ".txt", ios::app);
+    if (!teamFile.is_open()) {
+        cout << "Error opening team file for writing." << endl;
+        return;
+    }
+    teamFile << playerName << endl;
+    teamFile.close();
+    system("cls");
+    cout << "Player '" << playerName
+        << "' Purchased Successfully And Added To Team '" << teamName << "'!"
+        << endl;
+
+    ofstream updatedCategoryFile(filename);
+    if (!updatedCategoryFile.is_open()) {
+        cout << "Error: Could not open file " << filename << " for writing."
+            << endl;
+        return;
+    }
+
+    for (const string& p : players) {
+        if (p != playerName) {
+            updatedCategoryFile << p << endl;
+        }
+    }
+    updatedCategoryFile.close();
+    cout << "PRESS ENTER TO CONTINUE";
+    cin.ignore();
+    cin.get();
+    system("cls");
+}
+
+void releasePlayer() {
+
+    cout << "Registered Teams:" << endl;
+    displayRegisteredTeams();
+
+    cout << "Enter The Name Of The Team From Which You Want To Release The "
+        "Player: ";
+    string teamName;
+    cin >> teamName;
+
+    if (!isTeamRegistered(teamName)) {
+        cout << "No team named '" << teamName << "' found." << endl;
+        cout << "PRESS ENTER TO CONTINUE";
+        cin.ignore();
+        cin.get();
+        system("cls");
+        return;
+    }
+
+    ifstream teamFile(teamName + ".txt");
+    if (!teamFile.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName
+            << ".txt' for reading." << endl;
+        return;
+    }
+
+    cout << "Players In Team '" << teamName << "':" << endl;
+    string playerName;
+    vector<string> players;
+    int serialNumber = 1;
+    while (getline(teamFile, playerName)) {
+        cout << serialNumber << ". " << playerName << endl;
+        players.push_back(playerName);
+        serialNumber++;
+    }
+    teamFile.close();
+
+    if (players.empty()) {
+        cout << "No players in team '" << teamName << "'." << endl;
+        return;
+    }
+
+    cout << "Enter the serial number of the player you want to release: ";
+    int playerSerial;
+    while (!(cin >> playerSerial) || playerSerial < 1 ||
+        playerSerial > players.size()) {
+        cout << "Invalid serial number. Enter again: ";
+        clearInputBuffer();
+    }
+    string playerToRelease = players[playerSerial - 1];
+
+    players.erase(players.begin() + playerSerial - 1);
+
+    cout << "Player categories:" << endl;
+    displayPlayerCategories();
+
+    cout << "Enter the number of the category to store the released player: ";
+    int categoryChoice;
+    while (!(cin >> categoryChoice) || categoryChoice < 1 || categoryChoice > 4) {
+        cout << "Invalid category number. Enter again: ";
+        clearInputBuffer();
+    }
+
+    string category;
+    switch (categoryChoice) {
+    case 1:
+        category = "Gold";
+        break;
+    case 2:
+        category = "Platinum";
+        break;
+    case 3:
+        category = "Diamond";
+        break;
+    case 4:
+        category = "Emerging";
+        break;
+    }
+
+    ofstream categoryFile(category + "_players.txt", ios::app);
+    if (!categoryFile.is_open()) {
+        cout << "Error: Unable to open category file '" << category
+            << "_players.txt' for writing." << endl;
+        return;
+    }
+
+    categoryFile << playerToRelease << endl;
+    categoryFile.close();
+
+    ofstream outputFile(teamName + ".txt");
+    if (!outputFile.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName
+            << ".txt' for writing." << endl;
+        return;
+    }
+
+    for (const auto& player : players) {
+        outputFile << player << endl;
+    }
+    outputFile.close();
+
+    cout << "Player '" << playerToRelease << "' released successfully from team '"
+        << teamName << "'." << endl;
+}
+
+void performPlayerExchange() {
+
+    displayRegisteredTeams();
+
+    cout << "Enter the name of your team: ";
+    string teamName1;
+    cin >> teamName1;
+
+    ifstream teamFileRead1(teamName1 + ".txt");
+    if (!teamFileRead1.is_open()) {
+        cout << "Team '" << teamName1 << "' not found." << endl;
+        return;
+    }
+    teamFileRead1.close();
+
+    cout << "Players in your team (" << teamName1 << "):" << endl;
+    ifstream teamFile1(teamName1 + ".txt");
+    string player1;
+    while (getline(teamFile1, player1)) {
+        cout << player1 << endl;
+    }
+    teamFile1.close();
+
+    cout << "Enter the name of the other team: ";
+    string teamName2;
+    cin >> teamName2;
+
+    ifstream teamFileRead2(teamName2 + ".txt");
+    if (!teamFileRead2.is_open()) {
+        cout << "Team '" << teamName2 << "' not found." << endl;
+        return;
+    }
+    teamFileRead2.close();
+
+    cout << "Players in the other team (" << teamName2 << "):" << endl;
+    ifstream teamFile2(teamName2 + ".txt");
+    string player2;
+    while (getline(teamFile2, player2)) {
+        cout << player2 << endl;
+    }
+    teamFile2.close();
+
+    cout << "Enter the name of the player you want to exchange from your team ("
+        << teamName1 << "): ";
+    string playerToExchange1;
+    cin >> playerToExchange1;
+
+    ifstream teamFileCheck1(teamName1 + ".txt");
+    bool playerExists1 = false;
+    while (getline(teamFileCheck1, player1)) {
+        if (player1 == playerToExchange1) {
+            playerExists1 = true;
+            break;
+        }
+    }
+    teamFileCheck1.close();
+
+    if (!playerExists1) {
+        cout << "Player '" << playerToExchange1 << "' not found in team '"
+            << teamName1 << "'." << endl;
+        return;
+    }
+
+    cout << "Enter the name of the player you want to receive in exchange from "
+        "the other team ("
+        << teamName2 << "): ";
+    string playerToReceive2;
+    cin >> playerToReceive2;
+
+    ifstream teamFileCheck2(teamName2 + ".txt");
+    bool playerExists2 = false;
+    while (getline(teamFileCheck2, player2)) {
+        if (player2 == playerToReceive2) {
+            playerExists2 = true;
+            break;
+        }
+    }
+    teamFileCheck2.close();
+
+    if (!playerExists2) {
+        cout << "Player '" << playerToReceive2 << "' not found in team '"
+            << teamName2 << "'." << endl;
+        return;
+    }
+
+    ifstream originalTeamFile1(teamName1 + ".txt");
+    if (!originalTeamFile1.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName1
+            << ".txt' for reading." << endl;
+        return;
+    }
+
+    vector<string> playersInTeam1;
+    while (getline(originalTeamFile1, player1)) {
+        if (player1 != playerToExchange1) {
+            playersInTeam1.push_back(player1);
+        }
+    }
+    originalTeamFile1.close();
+
+    ofstream updatedTeamFile1(teamName1 + ".txt");
+    if (!updatedTeamFile1.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName1
+            << ".txt' for writing." << endl;
+        return;
+    }
+
+    for (const string& p : playersInTeam1) {
+        updatedTeamFile1 << p << endl;
+    }
+    updatedTeamFile1.close();
+
+    ofstream appendedTeamFile1(teamName1 + ".txt", ios::app);
+    if (!appendedTeamFile1.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName1
+            << ".txt' for appending." << endl;
+        return;
+    }
+    appendedTeamFile1 << playerToReceive2 << endl;
+    appendedTeamFile1.close();
+
+    ifstream originalTeamFile2(teamName2 + ".txt");
+    if (!originalTeamFile2.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName2
+            << ".txt' for reading." << endl;
+        return;
+    }
+
+    vector<string> playersInTeam2;
+    while (getline(originalTeamFile2, player2)) {
+        if (player2 != playerToReceive2) {
+            playersInTeam2.push_back(player2);
+        }
+    }
+    originalTeamFile2.close();
+
+    ofstream updatedTeamFile2(teamName2 + ".txt");
+    if (!updatedTeamFile2.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName2
+            << ".txt' for writing." << endl;
+        return;
+    }
+
+    for (const string& p : playersInTeam2) {
+        updatedTeamFile2 << p << endl;
+    }
+    updatedTeamFile2.close();
+
+    ofstream appendedTeamFile2(teamName2 + ".txt", ios::app);
+    if (!appendedTeamFile2.is_open()) {
+        cout << "Error: Unable to open team file '" << teamName2
+            << ".txt' for appending." << endl;
+        return;
+    }
+    appendedTeamFile2 << playerToExchange1 << endl;
+    appendedTeamFile2.close();
+
+    cout << "Player exchange successful!" << endl;
+}
+
+void handlePlayerStatisticsMenu() {
+    int subChoice;
+    system("cls");
+    while (true) {
+
+        cout << "\n";
+        cout << "  +-----------------------------------------------------+" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |             PLAYER STATISTICS MENU:                 |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  +-----------------------------------------------------+" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |                 1. ADD NEW PLAYER                   |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |                 2. DISPLAY PLAYER STATISTICS        |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |                 3. BACK                             |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  +-----------------------------------------------------+" << endl;
+        cout << "Enter your choice: ";
+        while (!(cin >> subChoice) || (subChoice < 1 || subChoice > 3)) {
+            cout << "--->>ENTER VALID INPUT";
+            clearInputBuffer();
+        }
+        switch (subChoice) {
+        case 1:
+            addPlayerLinkedList(head);
+            break;
+        case 2:
+            displayPlayerStatistics();
+            break;
+        case 3:
+            system("cls");
+            return;
+        }
+        if (subChoice == 3)
+            break;
+    }
+}
+
+void playerManagement() {
+    system("cls");
+    int choice;
+    while (true) {
+        displayPlayerManagementMenu();
+        cout << "Enter your choice: ";
+        while (!(cin >> choice) || (choice < 1 || choice > 6)) {
+            cout << "--->>ENTER VALID INPUT";
+        }
+
+        switch (choice) {
+        case 1:
+            purchasePlayer();
+            break;
+        case 2:
+            releasePlayer();
+            break;
+        case 3:
+            performPlayerExchange();
+            break;
+        case 4:
+            handlePlayerStatisticsMenu();
+            break;
+        case 5:
+            system("cls");
+            return;
+        case 6:
+            logout();
+            return;
+        }
+    }
+}
+
+void sponsorManagement() {
+    int choice;
+    while (true) {
+        cout << "\n";
+        cout << "  +-----------------------------------------------------+" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |           SPONSOR MANAGEMENT MENU:                  |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  +-----------------------------------------------------+" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |                 1. DISPLAY SPONSOR CATEGORIES       |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |                 2. SELECT SPONSOR FOR TEAM          |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  |                 3. BACK TO MAIN MENU                |" << endl;
+        cout << "  |                                                     |" << endl;
+        cout << "  +-----------------------------------------------------+" << endl;
+        cout << "Enter your choice: ";
+        while (!(cin >> choice) || (choice < 1 || choice > 3)) {
+            cout << "--->>ENTER VALID INPUT";
+            clearInputBuffer();
+        }
+
+        switch (choice) {
+        case 1:
+            displaySponsorCategories();
+            break;
+        case 2:
+            selectSponsor();
+            break;
+        case 3:
+            system("cls");
+            return;
+        }
+    }
+}
+
+void displaySponsorManagementMenu() {
+    system("cls");
+    cout << "\n";
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |             SPONSOR MANAGEMENT MENU                 |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 1. DISPLAY SPONSOR CATEGORIES       |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 2. SELECT SPONSOR FOR TEAM          |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 3. BACK TO MAIN MENU                |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+}
+
+void displaySponsorCategories() {
+    system("cls");
+    cout << "\n";
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |             SPONSOR CATEGORIES:                     |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 1. PLATINUM                         |" << endl;
+    cout << "  |                     a. Red Bull                     |" << endl;
+    cout << "  |                     b. Nike                         |" << endl;
+    cout << "  |                     c. Pepsi                        |" << endl;
+    cout << "  |                     d. Fanta                        |" << endl;
+    cout << "  |                     e. Mentos                       |" << endl;
+    cout << "  |                     f. TCL                          |" << endl;
+    cout << "  |                     g. Haier                        |" << endl;
+    cout << "  |                     h. Reebok                       |" << endl;
+    cout << "  |                     i. Puma                         |" << endl;
+    cout << "  |                     j. Redmi                        |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 2. GOLD                             |" << endl;
+    cout << "  |                     a. Adidas                       |" << endl;
+    cout << "  |                     b. Coca-Cola                    |" << endl;
+    cout << "  |                     c. Samsung                      |" << endl;
+    cout << "  |                     d. NewGoldSponsor               |" << endl;
+    cout << "  |                     e. Sony                         |" << endl;
+    cout << "  |                     f. Microsoft                    |" << endl;
+    cout << "  |                     g. Bose                         |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  |                 3. SILVER                           |" << endl;
+    cout << "  |                     a. KitKat                       |" << endl;
+    cout << "  |                     b. Gatorade                     |" << endl;
+    cout << "  |                     c. Under Armour                 |" << endl;
+    cout << "  |                     d. Fujitsu                      |" << endl;
+    cout << "  |                     e. Lenovo                       |" << endl;
+    cout << "  |                     f. LG                           |" << endl;
+    cout << "  |                     g. Panasonic                    |" << endl;
+    cout << "  |                     h. Nestle                       |" << endl;
+    cout << "  |                     i. Asics                        |" << endl;
+    cout << "  |                                                     |" << endl;
+    cout << "  +-----------------------------------------------------+" << endl;
+    cout << "PRESS ENTER TO CONTINUE:" << endl;
+    cin.ignore();
+    cin.get();
+    system("cls");
+}
+
+vector<pair<string, vector<string>>> loadSponsors() {
+    vector<pair<string, vector<string>>> sponsorsByCategory;
+
+    vector<string> platinumSponsors = { "Red Bull", "Nike", "Pepsi", "Fanta",
+                                       "Mentos",   "TCL",  "Haier", "Reebok",
+                                       "Puma",     "Redmi" };
+    sponsorsByCategory.push_back(make_pair("Platinum", platinumSponsors));
+
+    vector<string> goldSponsors = {
+        "Adidas", "Coca-Cola", "Samsung", "NewGoldSponsor",
+        "Sony",   "Microsoft", "Bose" };
+    sponsorsByCategory.push_back(make_pair("Gold", goldSponsors));
+
+    vector<string> silverSponsors = { "KitKat",    "Gatorade", "Under Armour",
+                                     "Fujitsu",   "Lenovo",   "LG",
+                                     "Panasonic", "Nestle",   "Asics" };
+    sponsorsByCategory.push_back(make_pair("Silver", silverSponsors));
+
+    return sponsorsByCategory;
+}
+
+bool isTeamRegistered(const string& teamName) {
+    ifstream teamsFile("teams.txt");
+    if (teamsFile.is_open()) {
+        string line;
+        while (getline(teamsFile, line)) {
+            if (line == teamName) {
+                teamsFile.close();
+                return true;
+            }
+        }
+        teamsFile.close();
+    }
+    return false;
+}
+
+void selectSponsor() {
+    displayRegisteredTeams();
+    vector<pair<string, vector<string>>> sponsorsByCategory = loadSponsors();
+    if (sponsorsByCategory.empty()) {
+        cout << "No sponsors available." << endl;
+        return;
+    }
+
+    cout << "Available Sponsors by Category:" << endl;
+    int categoryNumber = 1;
+    for (const auto& category : sponsorsByCategory) {
+        cout << categoryNumber++ << ". " << category.first << " Sponsors:" << endl;
+        int sponsorNumber = 1;
+        for (const string& sponsor : category.second) {
+            cout << "   " << sponsorNumber++ << ". " << sponsor << endl;
+        }
+    }
+
+    int selectedCategoryNumber;
+    cout << "Enter the number of the sponsor category you want to select: ";
+    cin >> selectedCategoryNumber;
+    if (selectedCategoryNumber < 1 ||
+        selectedCategoryNumber > sponsorsByCategory.size()) {
+        cout << "Invalid category number." << endl;
+        return;
+    }
+
+    int selectedSponsorIndex;
+    cout << "Enter the number corresponding to the sponsor you want to select "
+        "from category: ";
+    cin >> selectedSponsorIndex;
+    if (selectedSponsorIndex < 1 ||
+        selectedSponsorIndex >
+        sponsorsByCategory[selectedCategoryNumber - 1].second.size()) {
+        cout << "Invalid sponsor choice." << endl;
+        return;
+    }
+
+    string selectedSponsor = sponsorsByCategory[selectedCategoryNumber - 1]
+        .second[selectedSponsorIndex - 1];
+
+    string teamName;
+    cout << "Enter the name of the team to register the sponsor: ";
+    cin >> teamName;
+
+    if (!isTeamRegistered(teamName)) {
+        system("cls");
+        cout << "Error: Team '" << teamName << "' is not registered." << endl;
+        return;
+    }
+
+    string teamFileName = teamName + "_sponsors.txt";
+    ofstream teamFile(teamFileName, ios::app);
+    if (teamFile.is_open()) {
+        teamFile << selectedSponsor << endl;
+        teamFile.close();
+        system("cls");
+        cout << "Sponsor '" << selectedSponsor
+            << "' successfully registered to team '" << teamName << "'." << endl;
+    }
+    else {
+        cout << "Error: Unable to open team file '" << teamFileName
+            << "' for appending." << endl;
+    }
+    cout << "PRESS ENTER TO CONTINUE" << endl;
+    cin.get();
+    cin.ignore();
+    system("cls");
+}
+
+void userGuide() {
+    int choice;
+    const int consoleWidth = 80;
+    do {
+        // Display the menu
+       // Display the menu
+        cout << "\n\n";
+        system("cls");
+        cout << setw(consoleWidth) << "**********************************************************************" << endl;
+        cout << setw(consoleWidth) << "*                            USER MANUAL GUIDE                       *" << endl;
+        cout << setw(consoleWidth) << "**********************************************************************" << endl;
+        cout << setw(consoleWidth) << "* 1. INTRODUCTION                                                   *" << endl;
+        cout << setw(consoleWidth) << "* 2. GETTING STARTED                                                *" << endl;
+        cout << setw(consoleWidth) << "* 3. MAIN MENU                                                      *" << endl;
+        cout << setw(consoleWidth) << "* 4. TEAM MANAGEMENT                                                *" << endl;
+        cout << setw(consoleWidth) << "* 5. PLAYER MANAGEMENT                                              *" << endl;
+        cout << setw(consoleWidth) << "* 6. SPONSOR MANAGEMENT                                             *" << endl;
+        cout << setw(consoleWidth) << "* 7. MATCH MANAGEMENT                                               *" << endl;
+        cout << setw(consoleWidth) << "* 8. LOGGING OUT                                                    *" << endl;
+        cout << setw(consoleWidth) << "* 9. EXIT                                                           *" << endl;
+        cout << "\n\n\n\n\n";
+        cout <<  "      -->> SELECT AN OPTION TO VIEW THE SECTION (1-9): ";
+
+        cin >> choice;
+
+ 
+
+        switch (choice) {
+        case 1:
+            system("cls");
+            cout << "* 1. INTRODUCTION                                                   *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* WELCOME TO THE CRICKET MANAGEMENT SYSTEM! THIS SYSTEM IS DESIGNED *" << endl;
+            cout << "* TO STREAMLINE VARIOUS OPERATIONS RELATED TO MANAGING CRICKET      *" << endl;
+            cout << "* TEAMS, PLAYERS, SPONSORS, MATCHES, AND MORE. WHETHER YOU'RE AN    *" << endl;
+            cout << "* ADMINISTRATOR, TEAM MANAGER, OR SPONSOR REPRESENTATIVE, THIS      *" << endl;
+            cout << "* SYSTEM PROVIDES TOOLS TO EFFICIENTLY ORGANIZE AND TRACK CRICKET-  *" << endl;
+            cout << "* RELATED ACTIVITIES.                                               *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 2:
+            system("cls");
+            cout << "* 2. GETTING STARTED                                                *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* WHEN YOU LAUNCH THE CRICKET MANAGEMENT SYSTEM, YOU WILL BE GREETED *" << endl;
+            cout << "* WITH A WELCOME MESSAGE AND PROMPTED TO CONTINUE BY PRESSING ANY   *" << endl;
+            cout << "* KEY. YOU'LL THEN HAVE THE OPTION TO VIEW THE USER MANUAL GUIDE,   *" << endl;
+            cout << "* WHICH PROVIDES AN OVERVIEW OF THE SYSTEM'S FUNCTIONALITIES. AFTER *" << endl;
+            cout << "* REVIEWING THE GUIDE, YOU'LL PROCEED TO THE MAIN MENU.             *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 3:
+            system("cls");
+            cout << "* 3. MAIN MENU                                                      *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* THE MAIN MENU PRESENTS SEVERAL OPTIONS, INCLUDING TEAM MANAGEMENT, *" << endl;
+            cout << "* PLAYER MANAGEMENT, SPONSOR MANAGEMENT, MATCH MANAGEMENT, AND      *" << endl;
+            cout << "* LOGGING OUT. EACH OPTION LEADS TO A SPECIFIC SET OF FUNCTIONALITIES*" << endl;
+            cout << "* TAILORED TO DIFFERENT USER ROLES AND TASKS.                       *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 4:
+            system("cls");
+            cout << "* 4. TEAM MANAGEMENT                                                *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* IN THE TEAM MANAGEMENT SECTION, YOU CAN ADD, EDIT, OR DELETE TEAMS.*" << endl;
+            cout << "* ADDITIONALLY, YOU CAN MANAGE TEAM MEMBERS, ASSIGN ROLES SUCH AS   *" << endl;
+            cout << "* PLAYERS, COACHES, AND STAFF, DESIGNATE CAPTAINS AND VICE-CAPTAINS,*" << endl;
+            cout << "* VIEW TEAM STATISTICS AND PERFORMANCE, AND ORGANIZE TEAM MEETINGS  *" << endl;
+            cout << "* AND EVENTS.                                                       *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 5:
+            system("cls");
+            cout << "* 5. PLAYER MANAGEMENT                                              *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* THE PLAYER MANAGEMENT SECTION ALLOWS YOU TO PERFORM VARIOUS TASKS *" << endl;
+            cout << "* RELATED TO MANAGING PLAYERS. YOU CAN ADD, EDIT, OR DELETE PLAYERS,*" << endl;
+            cout << "* MANAGE PLAYER PROFILES INCLUDING PERSONAL INFORMATION, STATISTICS,*" << endl;
+            cout << "* AND HISTORY, ASSIGN PLAYERS TO TEAMS AND ROLES, TRACK PLAYER      *" << endl;
+            cout << "* INJURIES, SUSPENSIONS, AND AVAILABILITY, AND VIEW PLAYER CONTRACTS,*" << endl;
+            cout << "* SALARIES, AND BONUSES.                                            *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 6:
+            system("cls");
+            cout << "* 6. SPONSOR MANAGEMENT                                             *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* SPONSOR MANAGEMENT ENABLES YOU TO MANAGE SPONSORSHIP DEALS AND    *" << endl;
+            cout << "* CONTRACTS. YOU CAN ADD, EDIT, OR DELETE SPONSORS, TRACK SPONSORSHIP*" << endl;
+            cout << "* AGREEMENTS INCLUDING TERMS AND PAYMENTS, MONITOR SPONSORSHIPS FOR *" << endl;
+            cout << "* VISIBILITY AND BRANDING, AND GENERATE SPONSORSHIP REPORTS AND     *" << endl;
+            cout << "* ANALYTICS.                                                        *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 7:
+            system("cls");
+            cout << "* 7. MATCH MANAGEMENT                                               *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* IN THE MATCH MANAGEMENT SECTION, YOU CAN SCHEDULE MATCHES, MANAGE *" << endl;
+            cout << "* MATCH FIXTURES AND RESULTS INCLUDING SCORES AND STATISTICS, ASSIGN*" << endl;
+            cout << "* MATCH OFFICIALS SUCH AS REFEREES AND UMPIRES, AND ORGANIZE PRE-   *" << endl;
+            cout << "* MATCH AND POST-MATCH EVENTS.                                      *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 8:
+            system("cls");
+            cout << "* 8. LOGGING OUT                                                    *" << endl;
+            cout << "********************************************************************" << endl;
+            cout << "* WHEN YOU'RE DONE USING THE CRICKET MANAGEMENT SYSTEM, YOU CAN LOG *" << endl;
+            cout << "* OUT TO EXIT THE SYSTEM SECURELY.                                  *" << endl;
+            cout << "********************************************************************" << endl;
+            cin.ignore();
+            cout << "--> PRESS ANY KEY TO PROCEED";
+            cin.get();
+            break;
+
+        case 9:
+            system("cls");
+            cout << "EXITING THE USER MANUAL GUIDE." << endl;
+            break;
+
+        default:
+            system("cls");
+            cout << "INVALID CHOICE. PLEASE SELECT AN OPTION BETWEEN 1 AND 9." << endl;
+            break;
+        }
+
+        cout << "********************************************************************" << endl;
+
+    } while (choice != 9);
+}
+
+
+int main() {
+
+    time_t now = time(0);
+    tm ltm;
+
+    localtime_s(&ltm, &now);
+
+    char timeBuffer[80];
+    char dateBuffer[80];
+    strftime(timeBuffer, sizeof(timeBuffer), "%H:%M:%S", &ltm);
+    strftime(dateBuffer, sizeof(dateBuffer), "%Y-%m-%d", &ltm);
+
+    const int consoleWidth = 100;
+
+    cout << "\n\n\n";
+
+    cout << setw(consoleWidth - 40) << "TIME: " << timeBuffer << endl;
+    cout << setw(consoleWidth - 40) << "DATE: " << dateBuffer << "\n\n";
+
+    cout << setw(consoleWidth - 40) << "                                   "
+        "+------------------------------------------+                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   |      WELCOME TO CRICKET "
+        "MANAGEMENT       |                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   |            SYSTEM PROJECT      "
+        "          |                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   "
+        "|------------------------------------------|                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   |PROJECT DEVELOPED BY:           "
+        "          |                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   "
+        "|------------------------------------------|                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   |   1. MUHAMMAD MOOSA KHALIL     "
+        "          |                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   |   2. TAYYAB AAMIR ALI          "
+        "          |                    "
+        << endl;
+    cout << setw(consoleWidth - 40) << "                                   "
+        "+------------------------------------------+                    "
+        << endl;
+
+    cout << "\n\n\n";
+    cout << setw(consoleWidth - 40) << "                   -->EXPERIENCE THE THRILL OF MANAGING YOUR "
+        "SYSTEM LIKE NEVER BEFORE!";
+    cout << "\n\n";
+    string message = "                                            --> PRESS ANY "
+        "KEY TO PROCEED....    ";
+    string fullMessage = message + message;
+    int messageLength = message.length();
+    int windowSize = 40;
+    int currentPosition = 0;
+    int spaceCount = 0;
+
+    while (!_kbhit()) {
+
+        cout << "\r" << fullMessage.substr(currentPosition, windowSize);
+        cout.flush();
+        ++currentPosition;
+        ++spaceCount;
+
+        if (spaceCount == 15) {
+            currentPosition = (currentPosition + 15) % messageLength;
+            spaceCount = 0;
+        }
+
+        this_thread::sleep_for(chrono::milliseconds(200));
+    }
+
+    _getch();
+
+    system("cls");
+    char choice1;
+    cout << "Do you want to see the user manual guide? (y/n): ";
+    cin >> choice1;
+
+    while (toupper(choice1) != 'Y' && toupper(choice1) != 'N') {
+        cout << "Invalid input! Please enter 'y' or 'n': ";
+        cin >> choice1;
+    }
+
+    if (toupper(choice1) == 'Y') {
+        system("cls");
+        userGuide();
+        cin.get();
+    }
+
+    int choice;
+
+    while (true) {
+
+        if (!isAuthenticated) {
+
+            displayMainMenu();
+            cout << "                ENTER YOUR CHOICE: ";
+            while (!(cin >> choice) || (choice < 1 || choice > 6)) {
+                cout << "--->>ENTER VALID INPUT";
+                clearInputBuffer();
+            }
+
+            switch (choice) {
+            case 1:
+
+                userAuthentication();
+                isAuthenticated = true;
+                break;
+            case 2:
+                system("cls");
+                cout << "\n\n\n\n\n\n\n\n\n\n";
+                cout << "\n----------->>>LOGIN OR SIGNUP TO ACCESS THIS "
+                    "FEATURE--------------------->>>."
+                    << endl;
+
+                cout << "\n  " << endl;
+                cout << "PRESS ENTER TO CONTINUE" << endl;
+                cin.get();
+                cin.ignore();
+                system("cls");
+                break;
+            case 3:
+                system("cls");
+                cout << "\n\n\n\n\n\n\n\n\n\n";
+                cout << "\n----------->>>LOGIN OR SIGNUP TO ACCESS THIS "
+                    "FEATURE--------------------->>>."
+                    << endl;
+
+                cout << "\n  " << endl;
+                cout << "PRESS ENTER TO CONTINUE" << endl;
+                cin.get();
+                cin.ignore();
+                system("cls");
+                break;
+            case 4:
+                system("cls");
+                cout << "\n\n\n\n\n\n\n\n\n\n";
+                cout << "\n----------->>>LOGIN OR SIGNUP TO ACCESS THIS "
+                    "FEATURE--------------------->>>."
+                    << endl;
+                cout << "\n  " << endl;
+                cout << "PRESS ENTER TO CONTINUE" << endl;
+                cin.get();
+                cin.ignore();
+                system("cls");
+                break;
+            case 5:
+                system("cls");
+                cout << "\n\n\n\n\n\n\n\n\n\n";
+                cout << "\n----------->>>LOGIN OR SIGNUP TO ACCESS THIS "
+                    "FEATURE--------------------->>>."
+                    << endl;
+                cout << "PRESS ENTER TO CONTINUE" << endl;
+                cin.get();
+                cin.ignore();
+                system("cls");
+                cout << "\n  " << endl;
+                break;
+            case 6:
+                system("cls");
+                cout << "\n\n\n\n\n\n\n\n\n\n";
+                cout << "        "
+                    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                    "~~~~~~~~~~~~~~~~~"
+                    << endl;
+                cout << "       |                             ---> EXITING PROGRAM !!! "
+                    "                         |"
+                    << endl;
+                cout << "       |                             ---> IT'S BEEN A "
+                    "PLEASURE                         |"
+                    << endl;
+                cout << "       |                                  SERVING YOU. "
+                    "GOODBYE                         |"
+                    << endl;
+                cout << "       |                                  AND BEST WISHES "
+                    "FROM OUR                     |"
+                    << endl;
+                cout << "       |                                  CRICKET MANAGEMENT "
+                    "SYSTEM TEAM!              |"
+                    << endl;
+                cout << "        "
+                    "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+                    "~~~~~~~~~~~~~~~~~"
+                    << endl;
+
+                exit(1);
+            }
+        }
+        else {
+            while (true) {
+                cout << "\n";
+                cout << "  +-----------------------------------------------------+"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  |                 CHOOSE OPTION                       |"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  +-----------------------------------------------------+"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  |                 1. TEAM MANAGEMENT                  |"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  |                 2. PLAYER MANAGEMENT                |"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  |                 3. SPONSOR MANAGEMENT               |"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  |                 4. MATCH MANAGEMENT                 |"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  |                 5. LOG OUT                          |"
+                    << endl;
+                cout << "  |                                                     |"
+                    << endl;
+                cout << "  +-----------------------------------------------------+"
+                    << endl;
+
+                cout << "Enter your choice: ";
+                while (!(cin >> choice) || (choice < 1 || choice > 5)) {
+                    cout << "--->>ENTER VALID INPUT";
+                    clearInputBuffer();
+                }
+
+                switch (choice) {
+                case 1:
+                    teamManagement();
+                    break;
+                case 2:
+                    playerManagement();
+                    break;
+                case 3:
+                    system("cls");
+                    sponsorManagement();
+                    break;
+                case 4:
+                    system("cls");
+                    matchManagement();
+                    break;
+                case 5:
+                    logout();
+                    break;
+                }
+                if (!isAuthenticated) {
+                    break;
+                }
+            }
+        }
+    }
+
+    return 0;
+}

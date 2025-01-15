@@ -60,3 +60,26 @@ The code follows a modular structure with separate sections for function declara
 
 Conclusion
 The Cricket Management System is a well-structured console-based application designed to manage various aspects of cricket team operations efficiently. Through a combination of header files, global variables, and modular functions, the project achieves a high level of organization and readability. Overall, this system demonstrates effective implementation of concepts such as modular programming, file handling, and user interaction, making it a valuable tool for managing cricket teams efficiently. Further enhancements could include additional features and refinements.
+
+
+SCREENSHOTS
+![image](https://github.com/user-attachments/assets/9a7828e2-35db-44c9-8591-2e6871109f65)
+![image](https://github.com/user-attachments/assets/25526a08-13c1-441f-88dd-ccb29c044325)
+![image](https://github.com/user-attachments/assets/54d38cb4-827b-456f-9e43-cbbda5d6395c)
+![image](https://github.com/user-attachments/assets/89f93e05-b656-4568-b7bb-d06694981b31)
+![image](https://github.com/user-attachments/assets/c7ec03c4-c930-4658-b2f1-1f8326aed420)
+![image](https://github.com/user-attachments/assets/1fc9b4d9-c11e-4054-82bd-185d8b9f9f23)
+![image](https://github.com/user-attachments/assets/030ba167-17c2-4187-8441-6ac8cee9ab19)
+![image](https://github.com/user-attachments/assets/2460779a-5ba7-4c7e-9525-747a93dc18b3)
+
+
+
+
+
+
+
+
+
+
+
+
